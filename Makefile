@@ -195,7 +195,7 @@ reset:
 # Clean cube generated files
 clean_cube:
 	@echo "Cleaning cube files"
-	@-rm -rf cube/Src cube/Inc cube/Drivers cube/.mxproject cube/Makefile cube/*.s cube/*.ld
+	@-rm -rf cube/Src cube/Inc cube/Drivers cube/Middlewares cube/.mxproject cube/Makefile cube/*.s cube/*.ld
 
 # Clean build files
 # - Ignores cube-related build files (ST and CMSIS libraries)

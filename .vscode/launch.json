@@ -17,7 +17,7 @@
                     "text": "file '${workspaceRoot}/build/main.elf'"
                 },
                 {
-                    "text": "target extended-remote localhost:4242"
+                    "text": "target extended-remote localhost:2331"
                 },
                 {
                     "text": "load ${workspaceRoot}/build/main.elf"
@@ -42,7 +42,7 @@
 
             // Change device as needed
             "serverArgs": [
-                "-device", "STM32F303xC",
+                "-device", "STM32F303xE",
                 "-if", "SWD",
                 "-speed", "4000"
             ],

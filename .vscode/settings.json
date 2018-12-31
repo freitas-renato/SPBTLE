@@ -22,7 +22,10 @@
         "files.trimFinalNewlines": false,
     },
     "files.associations": {
-        "spi.h": "c",
-        "gp_timer.h": "c"
+        "app_x-cube-ble1.h": "c",
+        "main.h": "c",
+        "mcu.h": "c",
+        "stdint.h": "c",
+        "gpio.h": "c"
     }
 }

@@ -5,7 +5,8 @@
  */
 
 #include "mcu.h"
-#include "user_service.h"
+#include "spbtle.h"
+#include "robonitor.h"
 
 /*****************************************
  * Private Constant Definitions
@@ -19,10 +20,9 @@
 
 int main(void) {
     tBleStatus ret;
-    bt_recv = 0;
 
     mcu_init();
-    ret = BLE_init();
+    ret = ble_init("ThunderBlue", ble_led_on, ble_led_toggle);
 
     if (ret != BLE_STATUS_SUCCESS) {
         while (1) {
@@ -30,11 +30,11 @@ int main(void) {
     }
 
     for (;;) {
-        BLE_Process();
+        ble_process();
         mcu_sleep(LED_TOGGLE_DELAY_MS);
 
         if (button_pressed()) {
-            User_Update(bt_recv++);
+            // TESTE_update_char(aaa);
         }
     }
 }

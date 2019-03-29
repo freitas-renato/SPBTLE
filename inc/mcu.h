@@ -8,7 +8,6 @@
 #define __MCU_H__
 
 #include <stdint.h>
-#include "bluenrg_interface.h"
 #include "gpio.h"
 
 /*****************************************
@@ -42,5 +41,8 @@ void led_toggle(void);
  * @brief Reads Nucleo board pin state.
  */
 GPIO_PinState button_pressed(void);
+
+void ble_led_on(void);
+void ble_led_toggle(void);
 
 #endif  // __MCU_H__

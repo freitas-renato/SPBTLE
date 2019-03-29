@@ -26,6 +26,10 @@
         "main.h": "c",
         "mcu.h": "c",
         "stdint.h": "c",
-        "gpio.h": "c"
+        "gpio.h": "c",
+        "user_service.h": "c",
+        "bluenrg_gap_aci.h": "c",
+        "bluenrg_interface.h": "c",
+        "ble_types.h": "c"
     }
 }

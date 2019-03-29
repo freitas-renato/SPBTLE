@@ -11,8 +11,6 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
-// #include "app_x-cube-ble1.h"
-
 /*****************************************
  * Public Function Body Definitions
  *****************************************/
@@ -35,4 +33,12 @@ void led_toggle(void) {
 
 GPIO_PinState button_pressed(void) {
     return !HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin);
+}
+
+void ble_led_on(void) {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+}
+
+void ble_led_toggle(void) {
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 }

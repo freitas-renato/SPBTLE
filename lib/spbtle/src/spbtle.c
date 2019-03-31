@@ -18,8 +18,8 @@
 
 /*
  * Bluetooth MAC Address: 00:80:E1:14:14:XX
- * 00:80:E1 indentifies the manufacturer (STMicroelectronics)
- * 14:14 indentifies ThundeRatz Robotics Team
+ * 00:80:E1 identifies the manufacturer (STMicroelectronics)
+ * 14:14 identifies ThundeRatz Robotics Team
  * XX assigned by user
  */
 #define BLE_BDADDR(XX) \
@@ -47,10 +47,10 @@ static void led_empty(void) {}
 static led_function_t led_on = led_empty;
 static led_function_t led_toggle = led_empty;
 
-void ble_set_connectable(void);
-void ble_connection_complete_cb(uint8_t addr[6], uint16_t handle);
-void ble_disconnection_complete_cb(void);
-void ble_event_notify(void* pData);
+static void ble_set_connectable(void);
+static void ble_connection_complete_cb(uint8_t addr[6], uint16_t handle);
+static void ble_disconnection_complete_cb(void);
+static void ble_event_notify(void* pData);
 
 
 /*****************************************
@@ -228,7 +228,7 @@ void ble_process(void) {
  * @param  None
  * @retval None
  */
-void ble_set_connectable(void) {
+static void ble_set_connectable(void) {
     tBleStatus ret;
 
     char local_name[256] = {AD_TYPE_COMPLETE_LOCAL_NAME};
@@ -251,7 +251,7 @@ void ble_set_connectable(void) {
  * @param  uint16_t Connection handle
  * @retval None
  */
-void ble_connection_complete_cb(uint8_t addr[6], uint16_t handle) {
+static void ble_connection_complete_cb(uint8_t addr[6], uint16_t handle) {
     connected = true;
     connection_handle = handle;
 
@@ -267,7 +267,7 @@ void ble_connection_complete_cb(uint8_t addr[6], uint16_t handle) {
  * @param  None
  * @retval None
  */
-void ble_disconnection_complete_cb(void) {
+static void ble_disconnection_complete_cb(void) {
     connected = false;
     PRINTF("Disconnected\n");
     /* Make the device connectable again. */
@@ -282,7 +282,7 @@ void ble_disconnection_complete_cb(void) {
  * @param  void* Pointer to the ACI packet
  * @retval None
  */
-void ble_event_notify(void* pData) {
+static void ble_event_notify(void* pData) {
     hci_uart_pckt* hci_pckt = pData;
     /* obtain event packet */
     hci_event_pckt* event_pckt = (hci_event_pckt*) hci_pckt->data;

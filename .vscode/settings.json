@@ -30,6 +30,7 @@
         "user_service.h": "c",
         "bluenrg_gap_aci.h": "c",
         "bluenrg_interface.h": "c",
-        "ble_types.h": "c"
+        "ble_types.h": "c",
+        "spbtle.h": "c"
     }
 }

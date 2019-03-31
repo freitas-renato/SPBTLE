@@ -17,7 +17,7 @@
 /*****************************************
  * Public Variables
  *****************************************/
-uint8_t bt_recv[20];
+uint8_t* bt_recv[16];
 
 /*****************************************
  * Public Functions Prototypes
@@ -32,5 +32,14 @@ uint8_t bt_recv[20];
  * @retval  Value indicating success or error code.
  */
 tBleStatus ble_init(char* name, led_function_t led_on, led_function_t led_toggle);
+
+/**
+ * @brief   Adds sumo strategy list
+ *
+ * @param   strategies      Array with strategy names
+ * @param   strategy_count  Number of strategies to be added
+ * @retval  Value indicating success or error code.
+ */
+tBleStatus add_strategy_list(char* strategies[], uint8_t strategy_count);
 
 #endif // _ROBONITOR_H_

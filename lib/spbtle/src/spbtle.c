@@ -31,10 +31,10 @@
  *****************************************/
 
 static char* ble_name;
-volatile uint32_t connected = false;
-volatile uint8_t set_connectable = 1;
-volatile uint16_t connection_handle = 0;
-volatile uint8_t notification_enabled = false;
+static volatile uint32_t connected = false;
+static volatile uint8_t set_connectable = 1;
+static volatile uint16_t connection_handle = 0;
+static volatile uint8_t notification_enabled = false;
 
 static ble_service_t** _services;
 static uint8_t _service_count;
@@ -57,7 +57,7 @@ void ble_event_notify(void* pData);
  * Public Functions Bodies Definitions
  *****************************************/
 
-tBleStatus SPBTLE_init(char* name, uint8_t bd_addr, ble_service_t* services[], uint8_t service_count) {
+tBleStatus spbtle_init(char* name, uint8_t bd_addr, ble_service_t* services[], uint8_t service_count) {
     uint8_t bdaddr[] = { BLE_BDADDR(bd_addr) };
     uint16_t service_handle, dev_name_char_handle, appearance_char_handle;
 
@@ -149,7 +149,7 @@ void ble_leds(led_function_t on, led_function_t toggle) {
 tBleStatus ble_add_service(ble_service_t* service) {
     tBleStatus ret;
 
-    ret = aci_gatt_add_serv(UUID_TYPE_128, service->uuid, PRIMARY_SERVICE, 7, &(service->handle));
+    ret = aci_gatt_add_serv(UUID_TYPE_128, service->uuid, PRIMARY_SERVICE, 20, &(service->handle));
     if (ret != BLE_STATUS_SUCCESS) {
         PRINTF("Error adding new Service.\n");
         return ret;
@@ -169,14 +169,33 @@ tBleStatus ble_add_service(ble_service_t* service) {
     return ret;
 }
 
-tBleStatus ble_update_char_value(uint16_t serv_handle, uint16_t char_handle, uint8_t* value) {
+tBleStatus ble_update_char_value(uint16_t service_handle, uint16_t char_handle, const void* value) {
     tBleStatus ret;
 
-    ret = aci_gatt_update_char_value(serv_handle, char_handle, 0, sizeof(value), value);
+    ret = aci_gatt_update_char_value(service_handle, char_handle, 0, strlen(value), value);
 
     if (ret != BLE_STATUS_SUCCESS) {
         PRINTF("Failed to update characteristic value.\n");
         return ret;
+    }
+
+    return ret;
+}
+
+tBleStatus ble_add_char_descriptors(uint16_t service_handle, uint16_t char_handle, uint8_t count, char* values[]) {
+    tBleStatus ret = BLE_STATUS_FAILED;
+
+    uint8_t uuid[] = { 0x00, 0x00 };
+
+    for (uint8_t i = 0; i < count; i++) {
+        ret = aci_gatt_add_char_desc(service_handle, char_handle, UUID_TYPE_16, uuid, 20, strlen(values[i]),
+                                     values[i], ATTR_PERMISSION_NONE, ATTR_ACCESS_READ_ONLY, 0, 16, 1, NULL);
+
+        if (ret != BLE_STATUS_SUCCESS) {
+            PRINTF("Failed to add characteristic descriptor\n");
+            return ret;
+        }
+        uuid[0]++;
     }
 
     return ret;

@@ -45,7 +45,7 @@ extern "C" {
  * @param   service_count   Number of services to be added.
  * @retval  Value indicating success or error code.
  */
-tBleStatus SPBTLE_init(char* name, uint8_t bd_addr, ble_service_t* services[], uint8_t service_count);
+tBleStatus spbtle_init(char* name, uint8_t bd_addr, ble_service_t* services[], uint8_t service_count);
 
 /**
  * @brief   Add GATT service
@@ -56,18 +56,29 @@ tBleStatus ble_add_service(ble_service_t* service);
 
 /**
  * @brief   Update GATT characteristic value.
- * @param   serv_handle     GATT service handle.
+ * @param   service_handle  GATT service handle.
  * @param   char_handle     GATT characteristic handle.
  * @param   value           Value to be written.
  * @retval  Value indicating success or error code.
  */
-tBleStatus ble_update_char_value(uint16_t serv_handle, uint16_t char_handle, uint8_t* value);
+tBleStatus ble_update_char_value(uint16_t service_handle, uint16_t char_handle, const void* value);
+
+/**
+ * @brief   Add GATT characteristic descriptors.
+ * @note    Descriptors UUID will be sequential, starting with 0x0000
+ * @param   service_handle  GATT service handle.
+ * @param   char_handle     GATT characteristic handle.
+ * @param   count           Number of descriptors to be added.
+ * @param   values          Descriptor values array.
+ * @retval  Value indicating success or error code.
+ */
+tBleStatus ble_add_char_descriptors(uint16_t service_handle, uint16_t char_handle, uint8_t count, char* values[]);
 
 /**
  * @brief   Sets LED parameters to indicate connection status
- *          ON if connected, blinks otherwise
- * @param   on      Turn on LED
- * @param   toggle  Toggle LED
+ *          ON if connected, blinks otherwise.
+ * @param   on      Turn on LED.
+ * @param   toggle  Toggle LED.
  * @retval  None
  */
 void ble_leds(led_function_t on, led_function_t toggle);

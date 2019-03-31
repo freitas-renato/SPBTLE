@@ -25,30 +25,26 @@
 #define TR_UUID(uuid_13, uuid_12) \
     0x93, 0x3d, 0x87, 0xBD, 0x63, 0xD6, 0x14, 0xAB, 0xE9, 0x11, 0x47, 0x23, uuid_13, uuid_12, 0x14, 0x14
 
-#define STRATEGIES_SERVICE_UUID TR_UUID(0x00, 0x01)
-#define STRATEGIES_CHAR_UUID TR_UUID(0x00, 0x00)
-#define STRATEGIES_LIST_CHAR_UUID TR_UUID(0x01, 0x00)
+#define STRATEGIES_SERVICE_UUID TR_UUID(0x00, 0x00)
+#define STRATEGIES_CHAR_UUID TR_UUID(0x01, 0x00)
+#define STRATEGIES_LIST_CHAR_UUID TR_UUID(0x02, 0x00)
 
-#define TESTE_SERVICE_UUID TR_UUID(0x01, 0x01)
-#define CHAR_TEST TR_UUID(0x01, 0x02)
-
+#define TESTE_SERVICE_UUID TR_UUID(0x00, 0x01)
+#define CHAR_TEST TR_UUID(0x01, 0x01)
 
 
 /*****************************************
  * Private Variables
  *****************************************/
-static uint8_t zzz = 0;
-
+static ble_service_t** global_services;
 
 /*****************************************
  * Private Functions Bodies Definitions
  *****************************************/
 
 static void strategies_char_cb(uint8_t data_len, uint8_t* data) {
-    for (uint8_t j = 0; j < data_len; j++) {
-        bt_recv[zzz] = data[j];
-        zzz++;
-    }
+    memset(bt_recv, 0, strlen(bt_recv));
+    memcpy(bt_recv, data, data_len);
 }
 
 
@@ -72,7 +68,7 @@ tBleStatus ble_init(char* name, led_function_t led_on, led_function_t led_toggle
                 },
                 {
                     .uuid = { STRATEGIES_LIST_CHAR_UUID },
-                    .properties = CHAR_PROP_WRITE | CHAR_PROP_WRITE_WITHOUT_RESP | CHAR_PROP_READ,
+                    .properties = CHAR_PROP_READ,
                     .cb = NULL,
                 }
             },
@@ -92,13 +88,23 @@ tBleStatus ble_init(char* name, led_function_t led_on, led_function_t led_toggle
     // };
 
     // All services should be added here, then ble_init()
-    ble_service_t* default_services[] = {
+    static ble_service_t* default_services[] = {
         &default_service,
         // &TESTE_serv,
     };
 
-    ret = SPBTLE_init(name, BOARD_BDADDR, default_services, 1);
+    ret = spbtle_init(name, BOARD_BDADDR, default_services, 1);
     ble_leds(led_on, led_toggle);
+
+    global_services = default_services;
+    return ret;
+}
+
+tBleStatus add_strategy_list(char* strategies[], uint8_t strategy_count) {
+    tBleStatus ret;
+
+    ret = ble_update_char_value(global_services[0]->handle, global_services[0]->characteristics[1].handle, &strategy_count);
+    ret = ble_add_char_descriptors(global_services[0]->handle, global_services[0]->characteristics[1].handle, strategy_count, strategies);
 
     return ret;
 }

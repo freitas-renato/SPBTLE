@@ -1,7 +1,7 @@
 /**
  * @file ble_types.h
  *
- * @brief
+ * @brief Custom BLE data types definitions
  *
  * @author Renato Freitas <renato.freitas@thunderatz.org>
  * @author Daniel Nery <daniel.nery@thunderatz.org>

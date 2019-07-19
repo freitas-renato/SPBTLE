@@ -3,23 +3,12 @@
 # ThundeRatz Robotics Team
 # 08/2018
 
-PROJECT_NAME = board
-
-DEVICE_FAMILY := STM32F4xx
-DEVICE_TYPE   := STM32F401xx
-DEVICE        := STM32F401RE
-DEVICE_LD     := STM32F401RETx
-DEVICE_DEF    := STM32F401xE
-
-SUBMODULE_DIR := lib
-
-# Default values, can be set on the command line or here
-DEBUG   ?= 1
-VERBOSE ?= 0
-
 ###############################################################################
 
 # Tune the lines below only if you know what you are doing:
+
+# Project specific configurations
+include config.mk
 
 ###############################################################################
 ## Output configuration
@@ -32,7 +21,10 @@ else
 AT :=
 endif
 
-# Optmization
+###############################################################################
+## Code Optimization
+###############################################################################
+
 ifeq ($(DEBUG),1)
 OPT := -Og
 else
@@ -43,9 +35,6 @@ endif
 ## Input files
 ###############################################################################
 
-# Cube Directory
-CUBE_DIR := cube
-
 # Build Directory
 BUILD_DIR := build
 
@@ -54,15 +43,14 @@ CUBE_SOURCES := $(shell find $(CUBE_DIR) -name "*.c")
 ASM_SOURCES  := $(shell find $(CUBE_DIR) -name "*.s")
 C_SOURCES    := $(shell find src -name "*.c")
 C_HEADERS    := $(shell find inc -name "*.h")
-SUBM_SOURCES :=
+LIB_SOURCES  :=
 
 # Object Files
-CUBE_OBJECTS := $(addprefix $(BUILD_DIR)/cube/,$(notdir $(CUBE_SOURCES:.c=.o)))
-CUBE_OBJECTS += $(addprefix $(BUILD_DIR)/cube/,$(notdir $(ASM_SOURCES:.s=.o)))
+CUBE_OBJECTS := $(addprefix $(BUILD_DIR)/$(CUBE_DIR)/,$(notdir $(CUBE_SOURCES:.c=.o)))
+CUBE_OBJECTS += $(addprefix $(BUILD_DIR)/$(CUBE_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 OBJECTS      := $(addprefix $(BUILD_DIR)/obj/,$(notdir $(C_SOURCES:.c=.o)))
 
 vpath %.c $(sort $(dir $(CUBE_SOURCES)))
-
 vpath %.c $(sort $(dir $(C_SOURCES)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
@@ -72,6 +60,7 @@ vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 # Executables
 CC      := arm-none-eabi-gcc
+AS      := $(CC) -x assembler-with-cpp
 OBJCOPY := arm-none-eabi-objcopy
 SIZE    := arm-none-eabi-size
 GDB     := arm-none-eabi-gdb
@@ -84,29 +73,27 @@ C_DEFS  :=            \
 	-DUSE_HAL_DRIVER  \
 	-D$(DEVICE_DEF)   \
 
+ifeq ($(DEBUG),1)
+C_DEFS += -DDEBUG
+endif
+
 # Include Paths
 AS_INCLUDES :=
-C_INCLUDES  :=                                                         \
-	-I$(CUBE_DIR)/Drivers/CMSIS/Device/ST/$(DEVICE_FAMILY)/Include     \
-	-I$(CUBE_DIR)/Drivers/CMSIS/Include                                \
-	-I$(CUBE_DIR)/Drivers/$(DEVICE_FAMILY)_HAL_Driver/Inc              \
-	-I$(CUBE_DIR)/Drivers/$(DEVICE_FAMILY)_HAL_Driver/Inc/Legacy       \
-	-I$(CUBE_DIR)/Inc                                                  \
-	-Iinc                                                              \
-	# -I$(CUBE_DIR)/Middlewares/ST/BlueNRG-MS/includes                   \
-	# -I$(CUBE_DIR)/Middlewares/ST/BlueNRG-MS/hci/hci_tl_patterns/Basic  \
-	# -I$(CUBE_DIR)/Middlewares/ST/BlueNRG-MS/utils                      \
+C_INCLUDES  := $(addprefix -I,                            \
+	$(sort $(dir $(C_HEADERS)))                           \
+	$(sort $(dir $(shell find $(CUBE_DIR) -name "*.h")))  \
+)                                                         \
 
 # Adds submodule sources and include directories
-ifneq ($(wildcard $(SUBMODULE_DIR)/.*),)
--include $(shell find $(SUBMODULE_DIR) -name "sources.mk")
+ifneq ($(wildcard $(LIB_DIR)/.*),)
+-include $(shell find -L $(LIB_DIR) -name "sources.mk")
 endif
 
 # Submodule objects
-SUBM_OBJECTS := $(addprefix $(BUILD_DIR)/submodules/,$(notdir $(SUBM_SOURCES:.c=.o)))
+LIB_OBJECTS := $(addprefix $(BUILD_DIR)/$(LIB_DIR)/,$(notdir $(LIB_SOURCES:.c=.o)))
 
-ifneq ($(strip $(SUBM_SOURCES)),)
-vpath %.c $(sort $(dir $(SUBM_SOURCES)))
+ifneq ($(strip $(LIB_SOURCES)),)
+vpath %.c $(sort $(dir $(LIB_SOURCES)))
 endif
 
 # Compile Flags
@@ -117,7 +104,7 @@ else ifeq ($(DEVICE_FAMILY), $(filter $(DEVICE_FAMILY),STM32L0xx STM32G0xx))
 MCUFLAGS += -mcpu=cortex-m0plus
 else ifeq ($(DEVICE_FAMILY), $(filter $(DEVICE_FAMILY),STM32F1xx STM32L1xx STM32F2xx STM32L2xx))
 MCUFLAGS += -mcpu=cortex-m3
-else ifeq ($(DEVICE_FAMILY), $(filter $(DEVICE_FAMILY),STM32F3xx STM32L3xx STM32F4xx STM32L4xx))
+else ifeq ($(DEVICE_FAMILY), $(filter $(DEVICE_FAMILY),STM32F3xx STM32L3xx STM32F4xx STM32L4xx STM32WBxx))
 MCUFLAGS += -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 else ifeq ($(DEVICE_FAMILY), $(filter $(DEVICE_FAMILY),STM32F7xx STM32L7xx))
 MCUFLAGS += -mcpu=cortex-m7 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
@@ -143,7 +130,7 @@ CFLAGS  += -g3
 endif
 
 # Linker Flags
-LDSCRIPT := $(CUBE_DIR)/$(DEVICE_LD)_FLASH.ld
+LDSCRIPT := $(CUBE_DIR)/$(DEVICE_LD_FILE).ld
 
 LIBS     := -lc -lm -lnosys
 LIBDIR   :=
@@ -160,26 +147,27 @@ all: $(BUILD_DIR)/$(PROJECT_NAME).elf $(BUILD_DIR)/$(PROJECT_NAME).hex $(BUILD_D
 
 # All .o file depend on respective .c file, the Makefile
 # and build directory existence
-$(BUILD_DIR)/cube/%.o: %.c Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/$(CUBE_DIR)/%.o: %.c config.mk Makefile | $(BUILD_DIR)
 	@echo "CC $<"
-	$(AT)$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/cube/$(notdir $(<:.c=.lst)) -MF"$(@:.o=.d)" $< -o $@
+	$(AT)$(CC) -c $(CFLAGS) -Wno-unused-parameter -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(CUBE_DIR)/$(notdir $(<:.c=.lst)) \
+		-MF"$(@:.o=.d)" $< -o $@
 
-$(BUILD_DIR)/submodules/%.o: %.c Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/$(LIB_DIR)/%.o: %.c config.mk Makefile | $(BUILD_DIR)
 	@echo "CC $<"
-	$(AT)$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/submodules/$(notdir $(<:.c=.lst)) -MF"$(@:.o=.d)" $< -o $@
+	$(AT)$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(LIB_DIR)/$(notdir $(<:.c=.lst)) -MF"$(@:.o=.d)" $< -o $@
 
-$(BUILD_DIR)/obj/%.o: %.c Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/obj/%.o: %.c config.mk Makefile | $(BUILD_DIR)
 	@echo "CC $<"
 	$(AT)$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/obj/$(notdir $(<:.c=.lst)) -MF"$(@:.o=.d)" $< -o $@
 
-$(BUILD_DIR)/cube/%.o: %.s Makefile | $(BUILD_DIR)
-	@echo "CC $<"
-	$(AT)$(CC) -x assembler-with-cpp -c $(CFLAGS) -MF"$(@:%.o=%.d)" $< -o $@
+$(BUILD_DIR)/$(CUBE_DIR)/%.o: %.s config.mk Makefile | $(BUILD_DIR)
+	@echo "AS $<"
+	$(AT)$(AS) -c $(ASFLAGS) $< -o $@
 
 # The .elf file depend on all object files and the Makefile
-$(BUILD_DIR)/$(PROJECT_NAME).elf: $(OBJECTS) $(CUBE_OBJECTS) $(SUBM_OBJECTS) Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT_NAME).elf: $(OBJECTS) $(CUBE_OBJECTS) $(LIB_OBJECTS) config.mk Makefile | $(BUILD_DIR)
 	@echo "CC $@"
-	$(AT)$(CC) $(OBJECTS) $(CUBE_OBJECTS) $(SUBM_OBJECTS) $(LDFLAGS) -o $@
+	$(AT)$(CC) $(OBJECTS) $(CUBE_OBJECTS) $(LIB_OBJECTS) $(LDFLAGS) -o $@
 	$(AT)$(SIZE) $@
 
 # The .hex file depend on the .elf file and build directory existence
@@ -197,8 +185,8 @@ $(BUILD_DIR):
 	@echo "Creating build directory"
 	$(AT)mkdir -p $@
 	$(AT)mkdir -p $@/obj
-	$(AT)mkdir -p $@/submodules
-	$(AT)mkdir -p $@/cube
+	$(AT)mkdir -p $@/$(LIB_DIR)
+	$(AT)mkdir -p $@/$(CUBE_DIR)
 
 ###############################################################################
 ## OS dependent commands
@@ -221,7 +209,7 @@ endif
 ###############################################################################
 
 # Create cube script
-.cube: Makefile
+.cube: config.mk Makefile
 	@echo "Creating Cube script"
 	@echo "config load "$(CUBE_DIR)"/"$(PROJECT_NAME)".ioc" > $@
 	@echo "project generate" >> $@
@@ -233,21 +221,20 @@ cube:
 
 # Prepare workspace
 # - Erases useless Makefile, renames cube's main.c and links githooks
-prepare:
-	@echo "Linking githooks"
-	$(AT)git config core.hooksPath .githooks
+prepare: $(VS_LAUNCH_FILE) $(VS_C_CPP_PROPERTIES_FILE)
 	@echo "Preparing cube files"
 	$(AT)-mv -f $(CUBE_DIR)/Src/main.c $(CUBE_DIR)/Src/cube_main.c
 	$(AT)-rm -f $(CUBE_DIR)/Makefile
+	@echo "Linking githooks"
+	$(AT)git config core.hooksPath .githooks
 
-# Flash Built files with st-flash
+# Flash Built files with STM32CubeProgrammer
 flash load:
-	@echo "Flashing $(PROJECT_NAME).bin with STM32_Programmer_CLI"
-	$(AT)STM32_Programmer_CLI -c port=SWD -w $(BUILD_DIR)/$(PROJECT_NAME).bin \
-		0x08000000 -v -rst
+	@echo "Flashing $(PROJECT_NAME).hex with STM32_Programmer_CLI"
+	$(AT)STM32_Programmer_CLI -c port=SWD -w $(BUILD_DIR)/$(PROJECT_NAME).hex -v -rst
 
 # Create J-Link flash script
-.jlink-flash: Makefile
+.jlink-flash: config.mk Makefile
 	@echo "Creating J-Link flash script"
 	@echo device $(DEVICE) > $@
 	@echo si SWD >> $@
@@ -277,10 +264,10 @@ reset:
 # Clean cube generated files
 clean_cube:
 	@echo "Cleaning cube files"
-	$(AT)-mv $(CUBE_DIR)/$(PROJECT_NAME).ioc .
+	$(AT)-mv $(CUBE_DIR)/*.ioc .
 	$(AT)-rm -rf $(CUBE_DIR)
 	$(AT)-mkdir $(CUBE_DIR)
-	$(AT)-mv $(PROJECT_NAME).ioc $(CUBE_DIR)/
+	$(AT)-mv *.ioc $(CUBE_DIR)/
 
 # Clean build files
 # - Ignores cube-related build files (ST and CMSIS libraries)
@@ -293,19 +280,9 @@ clean_all:
 	@echo "Cleaning all build files"
 	$(AT)-rm -rf $(BUILD_DIR)
 
-# Uncrustify auxiliary variables
-UNCRUSTIFY_FILES = $(C_SOURCES) $(C_HEADERS)
-UNCRUSTIFIED_SOURCES = $(UNCRUSTIFY_FILES:%=.uncrustify/%)
-
-# Uncrustify auxiliary target
-.uncrustify/%: %
-	@mkdir -p $(dir $@)
-	@uncrustify -f $< -c uncrustify.cfg -o $@
-	@cp -f $@ $<
-
 # Format source code using uncrustify
-format: $(UNCRUSTIFIED_SOURCES) Makefile
-	@rm -rf .uncrustify/
+format:
+	$(AT)uncrustify -c uncrustify.cfg --replace --no-backup $(C_SOURCES) $(C_HEADERS)
 
 # Display help
 help:
@@ -315,8 +292,8 @@ help:
 	@echo
 	@echo "Opcoes:"
 	@echo "	help:       mostra essa ajuda"
-	@echo "	cube:       gera arquivos do cube"
-	@echo "	prepare:    prepara para compilação inicial apagando arquivos do cube"
+	@echo "	cube:       gera arquivos do cube (não funciona no momento por limitações no cube)"
+	@echo "	prepare:    prepara para compilação inicial apagando arquivos do cube, gera arquivos de configuração do vs code"
 	@echo "	all:        compila todos os arquivos"
 	@echo "	info:       mostra informações sobre o uC conectado"
 	@echo "	flash:      carrega os arquivos compilados no microcontrolador via st-link"
@@ -327,13 +304,94 @@ help:
 	@echo "	clean_cube: limpa os arquivos gerados pelo Cube"
 	@echo
 	@echo "Configuracoes atuais:"
-	@echo "	DEVICE_FAMILY := "$(DEVICE_FAMILY)
-	@echo "	DEVICE_TYPE   := "$(DEVICE_TYPE)
-	@echo "	DEVICE        := "$(DEVICE)
-	@echo "	DEVICE_LD     := "$(DEVICE_LD)
-	@echo "	DEVICE_DEF    := "$(DEVICE_DEF)
+	@echo "	DEVICE_FAMILY  := "$(DEVICE_FAMILY)
+	@echo "	DEVICE_TYPE    := "$(DEVICE_TYPE)
+	@echo "	DEVICE         := "$(DEVICE)
+	@echo "	DEVICE_LD_FILE := "$(DEVICE_LD_FILE)
+	@echo "	DEVICE_DEF     := "$(DEVICE_DEF)
+
+###############################################################################
+## VS Code files
+###############################################################################
+
+VSCODE_FOLDER            := .vscode
+VS_LAUNCH_FILE           := $(VSCODE_FOLDER)/launch.json
+VS_C_CPP_PROPERTIES_FILE := $(VSCODE_FOLDER)/c_cpp_properties.json
+
+NULL  :=
+SPACE := $(NULL) #
+COMMA := ,
+
+define VS_LAUNCH
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "stutil",
+            "cwd": "$${workspaceRoot}",
+            "executable": "./$(BUILD_DIR)/$(PROJECT_NAME).elf",
+            "name": "Cortex Debug (ST-Util)",
+            "device": "$(DEVICE)",
+            "v1": false
+        },
+        {
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "jlink",
+            "cwd": "$${workspaceRoot}",
+            "executable": "./$(BUILD_DIR)/$(PROJECT_NAME).elf",
+            "name": "Cortex Debug (J-Link)",
+            "device": "$(DEVICE)",
+            "interface": "swd",
+        }
+    ]
+}
+endef
+
+define VS_CPP_PROPERTIES
+{
+    "configurations": [
+        {
+            "name": "STM32_TR",
+            "includePath": [
+                $(subst -I,$(NULL),$(subst $(SPACE),$(COMMA),$(strip $(foreach inc,$(C_INCLUDES),"$(inc)"))))
+            ],
+
+            "defines": [
+                $(subst -D,$(NULL),$(subst $(SPACE),$(COMMA),$(strip $(foreach def,$(C_DEFS),"$(def)"))))
+            ],
+
+            "compilerPath": "$${env:ARM_GCC_PATH}/arm-none-eabi-gcc",
+            "cStandard": "c99",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
+endef
+
+export VS_LAUNCH
+export VS_CPP_PROPERTIES
+
+vs_files: $(VS_LAUNCH_FILE) $(VS_C_CPP_PROPERTIES_FILE)
+
+$(VS_LAUNCH_FILE): config.mk Makefile | $(VSCODE_FOLDER)
+	$(AT)echo "$$VS_LAUNCH" > $@
+
+$(VS_C_CPP_PROPERTIES_FILE): config.mk Makefile | $(VSCODE_FOLDER)
+	$(AT)echo "$$VS_CPP_PROPERTIES" > $@
+
+$(VSCODE_FOLDER):
+	$(AT)mkdir -p $@
+
+###############################################################################
 
 # Include dependecy files for .h dependency detection
 -include $(wildcard $(BUILD_DIR)/**/*.d)
 
-.PHONY: all cube prepare flash load jflash info reset clean_cube clean clean_all format help
+.PHONY:                                                       \
+	all cube prepare flash load jflash info reset clean_cube  \
+	clean clean_all format help vs_files

@@ -26,10 +26,11 @@ int main(void) {
     ret = ble_init("ThunderBlue", ble_led_on, ble_led_toggle);
     ret = add_strategy_list(strat, 5);
 
-
     if (ret != BLE_STATUS_SUCCESS) {
         while (1) {
-        };
+        }
+
+        ;
     }
 
     for (;;) {

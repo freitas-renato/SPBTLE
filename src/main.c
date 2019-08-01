@@ -20,22 +20,22 @@
 int main(void) {
     tBleStatus ret;
 
-    static char* strat[] = { "Estrela", "Dibre", "Arco Esquerda", "Defensiva", "Emergencia" };
+    static char* strat[] = {
+        "Estrela", "Dibre", "Arco Esquerda", "Defensiva", "Emergencia", "aaa", "bbb"
+    };
 
     mcu_init();
     ret = ble_init("ThunderBlue", ble_led_on, ble_led_toggle);
-    ret = add_strategy_list(strat, 5);
+    ret = add_strategy_list(strat, 7);
 
     if (ret != BLE_STATUS_SUCCESS) {
         while (1) {
         }
-
-        ;
     }
 
     for (;;) {
         ble_process();
 
-        mcu_sleep(300);
+        mcu_sleep(200);
     }
 }

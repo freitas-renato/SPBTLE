@@ -29,10 +29,6 @@
 #define STRATEGIES_CHAR_UUID TR_UUID(0x01, 0x00)
 #define STRATEGIES_LIST_CHAR_UUID TR_UUID(0x02, 0x00)
 
-#define TESTE_SERVICE_UUID TR_UUID(0x00, 0x01)
-#define CHAR_TEST TR_UUID(0x01, 0x01)
-
-
 /*****************************************
  * Private Variables
  *****************************************/
@@ -74,23 +70,9 @@ tBleStatus ble_init(char* name, led_function_t led_on, led_function_t led_toggle
             },
     };
 
-    // static ble_service_t TESTE_serv = {
-    //     .uuid = { TESTE_SERVICE_UUID },
-    //     .characteristic_count = 1,
-    //     .characteristics =
-    //         {
-    //             {
-    //                 .uuid = { CHAR_TEST },
-    //                 .properties = CHAR_PROP_WRITE | CHAR_PROP_WRITE_WITHOUT_RESP | CHAR_PROP_READ,
-    //                 .cb = strategies_char_cb,
-    //             },
-    //         },
-    // };
-
     // All services should be added here, then ble_init()
     static ble_service_t* default_services[] = {
         &default_service,
-        // &TESTE_serv,
     };
 
     ret = spbtle_init(name, BOARD_BDADDR, default_services, 1);
